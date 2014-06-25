@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageQueueCounts", "MessageQueueCounts\MessageQueueCounts.csproj", "{1A520D2E-72C3-452F-828F-CEE005EC9DB2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{BBAE8B64-A1FB-43C3-97B9-12967C283E91}"
+	ProjectSection(SolutionItems) = preProject
+		CodeProject.html = CodeProject.html
+		MSMQcounts.JPG = MSMQcounts.JPG
+	EndProjectSection
+EndProject
+Global
+	
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A520D2E-72C3-452F-828F-CEE005EC9DB2}.Debug|x86.ActiveCfg = Debug|x86
+		{1A520D2E-72C3-452F-828F-CEE005EC9DB2}.Debug|x86.Build.0 = Debug|x86
+		{1A520D2E-72C3-452F-828F-CEE005EC9DB2}.Release|x86.ActiveCfg = Release|x86
+		{1A520D2E-72C3-452F-828F-CEE005EC9DB2}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

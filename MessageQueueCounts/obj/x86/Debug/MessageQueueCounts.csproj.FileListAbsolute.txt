@@ -1,0 +1,10 @@
+F:\Documents\Projects\Microsoft\Published\Code Project\MessageQueueCounts\MessageQueueCounts\bin\Debug\MessageQueueCounts.exe
+F:\Documents\Projects\Microsoft\Published\Code Project\MessageQueueCounts\MessageQueueCounts\bin\Debug\MessageQueueCounts.pdb
+F:\Documents\Projects\Microsoft\Published\Code Project\MessageQueueCounts\MessageQueueCounts\obj\x86\Debug\MessageQueueCounts.csprojResolveAssemblyReference.cache
+F:\Documents\Projects\Microsoft\Published\Code Project\MessageQueueCounts\MessageQueueCounts\obj\x86\Debug\MessageQueueCounts.exe
+F:\Documents\Projects\Microsoft\Published\Code Project\MessageQueueCounts\MessageQueueCounts\obj\x86\Debug\MessageQueueCounts.pdb
+F:\Documents\Projects\GitHub\MessageQueueCounts\MessageQueueCounts\obj\x86\Debug\MessageQueueCounts.exe
+F:\Documents\Projects\GitHub\MessageQueueCounts\MessageQueueCounts\obj\x86\Debug\MessageQueueCounts.pdb
+F:\Documents\Projects\GitHub\MessageQueueCounts\MessageQueueCounts\bin\Debug\MessageQueueCounts.exe
+F:\Documents\Projects\GitHub\MessageQueueCounts\MessageQueueCounts\bin\Debug\MessageQueueCounts.pdb
+F:\Documents\Projects\GitHub\MessageQueueCounts\MessageQueueCounts\obj\x86\Debug\MessageQueueCounts.csprojResolveAssemblyReference.cache
