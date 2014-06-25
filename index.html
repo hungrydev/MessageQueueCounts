@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=640" />
+
+    <link rel="stylesheet" href="stylesheets/core.css" media="screen"/>
+    <link rel="stylesheet" href="stylesheets/mobile.css" media="handheld, only screen and (max-device-width:640px)"/>
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css"/>
+
+    <script type="text/javascript" src="javascripts/modernizr.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/headsmart.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function () {
+        $('#main_content').headsmart()
+      })
+    </script>
+    <title>MSMQ counting comparisions by hungrydev</title>
+  </head>
+
+  <body>
+    <a id="forkme_banner" href="https://github.com/hungrydev/MessageQueueCounts">View on GitHub</a>
+    <div class="shell">
+
+      <header>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <h1>MSMQ counting comparisions</h1>
+            <h2>Different methods of counting MSMQ messages and relative speed</h2>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+      </header>
+
+      <section id="downloads">
+        <span class="inner">
+          <a href="https://github.com/hungrydev/MessageQueueCounts/zipball/master" class="zip"><em>download</em> .ZIP</a><a href="https://github.com/hungrydev/MessageQueueCounts/tarball/master" class="tgz"><em>download</em> .TGZ</a>
+        </span>
+      </section>
+
+
+      <span class="banner-fix"></span>
+
+
+      <section id="main_content">
+        <h3>
+<a name="introduction" class="anchor" href="#introduction"><span class="octicon octicon-link"></span></a>Introduction</h3>
+
+<p>Recently I needed to create a means of visually monitoring the number of messages in multiple message queues.  This should of been relatively simple, create a UI to display the result from myMessageQueue.Count(), however the count method does not exist as part of the message queue class.
+This post looks at the various different methods that you can use to count.</p>
+
+<h3>
+<a name="cursor-method" class="anchor" href="#cursor-method"><span class="octicon octicon-link"></span></a>Cursor Method</h3>
+
+<p>When I searched for a solution most of the comments where using cursors.  This was the method that I initially used but when I had about &gt; 35,000 messages I found the count to be wildly erratic. The more messages you have in your queue the longer this method will take to count. For a full description of using cursors with MSMQ have a look on Microsoft h<a href="http://support.microsoft.com/kb/178516">ttp://support.microsoft.com/kb/178516</a>.</p>
+
+<pre>private MessageQueue _messageQueue;
+private int CountCursor()
+{
+    _messageQueue = new MessageQueue(".\\private$\\pingpong", QueueAccessMode.Peek);
+    int count = 0;
+    Cursor cursor = _messageQueue.CreateCursor();
+    Message m = CursorPeekWithoutTimeout(cursor, PeekAction.Current);
+    if (m != null)
+    {
+        count = 1;
+        while ((m = CursorPeekWithoutTimeout(cursor, PeekAction.Next)) != null)
+        {
+            count++;
+        }
+        if (m != null) m.Dispose();
+    }
+    cursor.Dispose();
+    return count;
+}
+protected Message CursorPeekWithoutTimeout(Cursor cursor, PeekAction action)
+{
+    Message ret = null;
+    try
+    {
+        ret = _messageQueue.Peek(new TimeSpan(1), cursor, action);
+    }
+    catch (MessageQueueException mqe)
+    {
+        if (mqe.MessageQueueErrorCode != MessageQueueErrorCode.IOTimeout)
+        {
+            throw;
+        }
+    }
+    return ret;
+}
+
+</pre>
+
+<h3>
+<a name="getallmessages-method" class="anchor" href="#getallmessages-method"><span class="octicon octicon-link"></span></a>GetAllMessages Method</h3>
+
+<p><code>GetAllMessages</code> returns a static copy of the messages in the queue, this is fine for small one off counts. In the real world you could have several hundred thousand large messages in the queue so to reduce the amount of information bought back we need to set up a message filter. The more messages you have in your queue the longer this method will take to count.</p>
+
+<pre>var _messageQueue = new MessageQueue(".\\private$\pingpong", QueueAccessMode.Peek);
+var countFilter = new MessagePropertyFilter
+                        {
+                            AdministrationQueue = false,
+                            ArrivedTime = false,
+                            CorrelationId = false,
+                            Priority = false,
+                            ResponseQueue = false,
+                            SentTime = false,
+                            Body = false,
+                            Label = false,
+                            Id = false
+                        };
+_messageQueue.MessageReadPropertyFilter = countFilter;
+return _messageQueue.GetAllMessages().Length;</pre>
+
+<h3>
+<a name="getenumerator2-method" class="anchor" href="#getenumerator2-method"><span class="octicon octicon-link"></span></a>GetEnumerator2 Method</h3>
+
+<p><code>GetEnumerator2</code> returns a dynamic list of messages in the queue.  The more messages you have in your queue the longer this method will take to count.</p>
+
+<pre>var _messageQueue = new MessageQueue(".\\private$\pingpong", QueueAccessMode.Peek);
+var x = _messageQueue.GetMessageEnumerator2();
+int iCount = 0;
+while (x.MoveNext())
+{
+   iCount++;
+}
+return iCount;</pre>
+
+<h3>
+<a name="powershell-wmi-method" class="anchor" href="#powershell-wmi-method"><span class="octicon octicon-link"></span></a>PowerShell (WMI) Method</h3>
+
+<p>This is by fastest method by far taking about 20ms regardless of how may messages there are to count. This is the only method for counting the message queues on other machines that you have access to.</p>
+
+<pre>private int GetPowerShellCount()
+{
+    return GetPowerShellCount(".\\private$\pingpong", Environment.MachineName, "", "");
+}
+private  int GetPowerShellCount(string queuePath, string machine,string username, string password)
+{
+    var path = string.Format(@"\\{0}\root\CIMv2", machine);
+    ManagementScope scope;
+    if (string.IsNullOrEmpty(username))
+    {
+            scope = new ManagementScope(path);
+    }
+    else
+    {
+        var options = new ConnectionOptions {Username = username, Password = password};
+        scope = new ManagementScope(path, options);
+    }
+    scope.Connect();
+    if (queuePath.StartsWith(".\\")) queuePath=queuePath.Replace(".\\",string.Format("{0}\\",machine));
+    
+    string queryString = String.Format("SELECT * FROM Win32_PerfFormattedData_msmq_MSMQQueue");
+    var query = new ObjectQuery(queryString);
+    var searcher = new ManagementObjectSearcher(scope, query);
+    IEnumerable&lt;int&gt; messageCountEnumerable =
+        from ManagementObject queue in searcher.Get()
+        select (int)(UInt64)queue.GetPropertyValue("MessagesInQueue");
+    //IEnumerable&lt;string&gt; messageCountEnumerable =
+    //  from ManagementObject queue in searcher.Get()
+    //  select (string)queue.GetPropertyValue("Name");
+    var x = messageCountEnumerable.First();
+    return x;
+}</pre>
+
+<h2>
+<a name="testing" class="anchor" href="#testing"><span class="octicon octicon-link"></span></a>Testing</h2>
+
+<p>I decided to create a test that would count the messages and count the timing for the messages to be counted. To run the tests included in source code you need to create a private MSMQ on your machine, the name of the queue does not matter as the application will use the first private queue it finds. The test application needs to run as an administrator as you will be purging the message queue before each tests start.</p>
+
+<p><img src="http://friedcode.files.wordpress.com/2014/06/msmqcounts.jpg?w=300" alt="MSMQcounts" width="605" height="270"></p>
+
+<h2>
+<a name="references" class="anchor" href="#references"><span class="octicon octicon-link"></span></a>References</h2>
+
+<ul>
+<li>John Opincar: <a href="http://jopinblog.wordpress.com/2008/03/12/counting-messages-in-an-msmq-messagequeue-from-c/">http://jopinblog.wordpress.com/2008/03/12/counting-messages-in-an-msmq-messagequeue-from-c/</a>
+</li>
+    <li>Emil Åström: <a href="http://www.meadow.se/wordpress/?p=648">http://www.meadow.se/wordpress/?p=648</a>
+</li>
+    <li>Microsoft: <a href="http://msdn.microsoft.com/en-us/library/system.messaging.messagequeue.getallmessages.aspx">http://msdn.microsoft.com/en-us/library/system.messaging.messagequeue.getallmessages.aspx</a>
+</li>
+    <li>Microsoft: <a href="http://msdn.microsoft.com/en-us/library/system.messaging.messagequeue.getmessageenumerator2.aspx">http://msdn.microsoft.com/en-us/library/system.messaging.messagequeue.getmessageenumerator2.aspx</a>
+</li>
+</ul><h2>
+<a name="post-history" class="anchor" href="#post-history"><span class="octicon octicon-link"></span></a>Post History</h2>
+
+<p>This article is a copy of a post I wrote on the Code Project website and can be found <a href="http://www.codeproject.com/Articles/346575/Message-Queue-Counting-Comparisions">here</a> along with the source code.</p>
+      </section>
+
+      <footer>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <p>this project by <a href="https://github.com/hungrydev">hungrydev</a> can be found on <a href="https://github.com/hungrydev/MessageQueueCounts">GitHub</a></p>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+        <p>Generated with <a href="http://pages.github.com">GitHub Pages</a> using Merlot</p>
+        <span class="octocat"></span>
+      </footer>
+
+    </div>
+
+    
+  </body>
+</html>
